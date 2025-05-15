@@ -1,0 +1,165 @@
+  
+CREATE TABLE customers (  
+    CustomerId INT PRIMARY KEY,  
+    Surname VARCHAR(255),  
+    CreditScore INT,  
+    Geography VARCHAR(255),  
+    Gender ENUM('Male', 'Female'),  
+    Age INT,  
+    Tenure INT,  
+    Balance DECIMAL(10, 2),  
+    NumOfProducts INT,  
+    HasCrCard TINYINT,  
+    IsActiveMember TINYINT,  
+    EstimatedSalary DECIMAL(10, 2),  
+    Exited TINYINT  
+);  
+-- Insert data from the customer-churn-records (2) dataset into the customers table  
+USE bank_customer_analysis; 
+
+INSERT INTO customers (CustomerId, Surname, CreditScore, Geography,   
+                       Gender, Age, Tenure, Balance,   
+                       NumOfProducts, HasCrCard, IsActiveMember,   
+                       EstimatedSalary, Exited)  
+SELECT CustomerId, Surname, CreditScore, Geography,   
+       Gender, Age, Tenure, Balance,   
+       NumOfProducts, HasCrCard, IsActiveMember,   
+       EstimatedSalary, Exited  
+FROM `customer-churn-records (2)`;  -- Ensure the dataset is accessible  
+
+
+-- Q1: What is the total number of customers in the dataset?  
+SELECT COUNT(*) AS Total_Customers FROM customers;  
+
+-- Q2: How many customers have churned vs. not churned?  
+SELECT   
+    SUM(CASE WHEN Exited = 1 THEN 1 ELSE 0 END) AS Total_Churned,  
+    SUM(CASE WHEN Exited = 0 THEN 1 ELSE 0 END) AS Total_Not_Churned  
+FROM customers;  
+
+-- Q3: What is the average credit score of all customers?  
+SELECT AVG(CreditScore) AS Average_CreditScore FROM customers;  
+
+-- Q4: List the number of customers from each country (Geography).  
+SELECT Geography, COUNT(*) AS Total_Customers   
+FROM customers   
+GROUP BY Geography;  
+
+-- Q5: Find the number of male vs. female customers.  
+SELECT Gender, COUNT(*) AS Total_Customers   
+FROM customers   
+GROUP BY Gender;  
+
+-- Q6: How many customers have zero account balance?  
+SELECT COUNT(*) AS Customers_Zero_Balance FROM customers WHERE Balance = 0;  
+
+-- Q7: What is the average balance of customers who have churned?  
+SELECT AVG(Balance) AS Average_Balance_Churned FROM customers WHERE Exited = 1;  
+
+-- Q8: Which country has the highest churn rate?  
+SELECT Geography,   
+       SUM(Exited) AS Churned_Customers,   
+       COUNT(*) AS Total_Customers,   
+       (SUM(Exited) / COUNT(*)) * 100 AS Churn_Rate  
+FROM customers   
+GROUP BY Geography   
+ORDER BY Churn_Rate DESC   
+LIMIT 1;   
+
+-- Q9: What is the average tenure of customers who have not churned?  
+SELECT AVG(Tenure) AS Average_Tenure_Not_Churned FROM customers WHERE Exited = 0;   
+
+-- Q10: Find the top 5 customers with the highest estimated salary who churned.  
+SELECT *   
+FROM customers   
+WHERE Exited = 1   
+ORDER BY EstimatedSalary DESC   
+LIMIT 5;  
+
+-- Q11: How many active members have more than 2 products?  
+SELECT COUNT(*) AS Active_Members_With_More_Than_2_Products   
+FROM customers   
+WHERE IsActiveMember = 1 AND NumOfProducts > 2;  
+
+-- Q12: Compare the average balance between active and inactive customers.  
+SELECT   
+    IsActiveMember,   
+    AVG(Balance) AS Average_Balance   
+FROM customers   
+GROUP BY IsActiveMember;   
+
+-- Q13: What is the average estimated salary per gender?  
+SELECT Gender, AVG(EstimatedSalary) AS Average_Estimated_Salary   
+FROM customers   
+GROUP BY Gender;  
+
+-- Q14: List the count of churned customers per tenure year.   
+SELECT Tenure, COUNT(*) AS Churned_Customers   
+FROM customers   
+WHERE Exited = 1   
+GROUP BY Tenure;  
+
+-- Q15: Identify the churn rate for each product count.  
+SELECT NumOfProducts,   
+       SUM(Exited) AS Churned_Customers,   
+       COUNT(*) AS Total_Customers,   
+       (SUM(Exited) / COUNT(*)) * 100 AS Churn_Rate  
+FROM customers   
+GROUP BY NumOfProducts;  
+
+-- Q16: What is the churn rate segmented by age groups (e.g., 18–30, 31–45, etc.)?  
+SELECT   
+    CASE   
+        WHEN Age BETWEEN 18 AND 30 THEN '18-30'  
+        WHEN Age BETWEEN 31 AND 45 THEN '31-45'  
+        WHEN Age BETWEEN 46 AND 60 THEN '46-60'  
+        ELSE '60+'  
+    END AS Age_Group,  
+    SUM(Exited) AS Churned_Customers,  
+    COUNT(*) AS Total_Customers,  
+    (SUM(Exited) / COUNT(*)) * 100 AS Churn_Rate  
+FROM customers   
+GROUP BY Age_Group;  
+
+-- Q17: Which combinations of Geography and Gender have the highest churn rate?  
+SELECT Geography, Gender,   
+       SUM(Exited) AS Churned_Customers,  
+       COUNT(*) AS Total_Customers,  
+       (SUM(Exited) / COUNT(*)) * 100 AS Churn_Rate  
+FROM customers   
+GROUP BY Geography, Gender   
+ORDER BY Churn_Rate DESC   
+LIMIT 1;  
+
+-- Q18: Find the average credit score and balance for churned customers per country.  
+SELECT Geography, AVG(CreditScore) AS Average_CreditScore, AVG(Balance) AS Average_Balance   
+FROM customers   
+WHERE Exited = 1   
+GROUP BY Geography;  
+
+-- Q19: List the 10 most at-risk customer profiles based on high balance and churned.  
+SELECT *   
+FROM customers   
+WHERE Exited = 1   
+ORDER BY Balance DESC   
+LIMIT 10;   
+
+-- Q20: What percentage of customers with no credit card have churned?  
+SELECT   
+    (SUM(CASE WHEN Exited = 1 THEN 1 ELSE 0 END) / COUNT(*)) * 100 AS Churn_Percentage_No_Credit_Card   
+FROM customers   
+WHERE HasCrCard = 0;   
+
+-- Q21: Which customers have a balance higher than the average balance of all churned customers?  
+SELECT *   
+FROM customers   
+WHERE Balance > (SELECT AVG(Balance) FROM customers WHERE Exited = 1);  
+
+-- Q22: Which countries have a churn rate higher than the overall churn rate?  
+SELECT Geography,  
+       SUM(Exited) AS Churned_Customers,  
+       COUNT(*) AS Total_Customers,  
+       (SUM(Exited) / COUNT(*)) * 100 AS Churn_Rate  
+FROM customers  
+GROUP BY Geography  
+HAVING Churn_Rate > (SELECT (SUM(Exited) / COUNT(*)) * 100 FROM customers);
